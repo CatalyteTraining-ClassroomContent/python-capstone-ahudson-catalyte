@@ -1,137 +1,161 @@
-{
-    "quizName": "string",
-    "quizModule": "string",
-    "quizScore": number,
-    "studentId": number,
-    "studentName": "string",
-    "submissionDate": "string",
-}
+from datetime import date, datetime
+from typing import List, Dict
+from collections import defaultdict
 
 
-def filter_by_date(date_to_filter, submissions):
-    """
-    Filters a list of submission objects, returning only those
-    with a submission_date matching the provided date.
-
-    Args:
-        date_to_filter (datetime.date): The date to filter by.
-        submissions (list): A list of Submission objects.
-
-    Returns:
-        list: A new list containing only the matching Submission objects.
-              Returns an empty list if no matches are found or the input list is empty.
-    """
-    return [
-        submission
-        for submission in submissions
-        if submission.submission_date == date_to_filter
-    ]
-
-
-class Submission:
-    """A mock Submission object for demonstration."""
-
-    def __init__(self, submission_id, student_id, grade):
-        self.submission_id = submission_id
-        self.student_id = student_id
-        self.grade = grade
-
-    def __repr__(self):
-        """String representation for easy printing."""
-        return f"Submission(submission_id='{self.submission_id}', student_id='{self.student_id}', grade={self.grade})"
-
-
-def filter_by_student_id(student_id: str, submissions: list) -> list:
-    """
-    Filters a list of submission objects by a given student ID.
-
-    Args:
-        student_id: The ID of the student to filter by.
-        submissions: A list of submission objects.
-
-    Returns:
-        A new list containing only the submissions matching the student_id.
-    """
-    return [s for s in submissions if s.student_id == student_id]
-
-
-def find_unsubmitted(target_date, student_names, submission_objects):
-    """
-    Identifies students who have not made any submissions on a specific date.
-
-    Args:
-        target_date (str): The date to check for unsubmitted quizzes (e.g., "YYYY-MM-DD").
-        student_names (list): A list of student names.
-        submission_objects (list): A list of submission objects. Each submission
-                                   object is expected to have 'student_name' and 'submission_date' attributes.
-
-    Returns:
-        list: A list of names of students who have not completed any quizzes on the target date.
-              Returns an empty list if all students submitted or if no unsubmitted students are found.
-    """
-    submitted_students_on_date = set()
-    for submission in submission_objects:
-        if submission.get("submission_date") == target_date:
-            submitted_students_on_date.add(submission.get("student_name"))
-
-    unsubmitted_students = []
-    for student in student_names:
-        if student not in submitted_students_on_date:
-            unsubmitted_students.append(student)
-
-    return unsubmitted_students
-
-
-def get_average_score(submissions):
-    """
-    Calculates the average score from a list of submission objects.
-
-    Args:
-      submissions: A list of submission objects, each having a 'score' attribute.
-
-    Returns:
-      The average score, rounded to one decimal place.
-    """
+def filter_by_date(date_to_filter: date, submissions: List[Dict]) -> List[Dict]:
     if not submissions:
-        return 0.0  # Return 0 if the list is empty to avoid division by zero
+        return []
+
+    filtered = []
+    for sub in submissions:
+        try:
+            sub_date = datetime.strptime(sub["submissionDate"], "%Y-%m-%d").date()
+            if sub_date == date_to_filter:
+                filtered.append(sub)
+        except (KeyError, ValueError, TypeError):
+            continue
+    return filtered
+
+
+def filter_by_student_id(student_id: int, submissions: List[Dict]) -> List[Dict]:
+    if not submissions:
+        return []
+    return [sub for sub in submissions if sub.get("studentId") == student_id]
+
+
+def find_unsubmitted(
+    date_to_check: date, student_names: List[str], submissions: List[Dict]
+) -> List[str]:
+    if not student_names:
+        return []
+    if not submissions:
+        return student_names.copy()
+
+    submitted_students = set()
+    for sub in submissions:
+        try:
+            sub_date = date.fromisoformat(sub["submissionDate"])
+            if sub_date == date_to_check:
+                submitted_students.add(sub.get("studentName"))
+        except (KeyError, ValueError, TypeError):
+            continue
+
+    return [name for name in student_names if name not in submitted_students]
+
+
+def get_average_score(submissions: List[Dict]) -> float:
+    if not submissions:
+        return 0.0
 
     total_score = 0
-    for submission in submissions:
-        total_score += submission.score  # Assuming each object has a 'score' attribute
+    count = 0
+    for sub in submissions:
+        try:
+            score = float(sub.get("quizScore"))
+            total_score += score
+            count += 1
+        except (TypeError, ValueError):
+            continue
+    if count == 0:
+        return 0.0
 
-    average = total_score / len(submissions)
-    return round(average, 1)
+    return round(total_score / count, 1)
 
 
-def get_average_score_by_module(submissions):
-    """
-    Calculates the average quiz score for each module from a list of submissions.
+def get_average_score_by_module(submissions: List[Dict]) -> Dict[str, float]:
+    if not submissions:
+        return {}
 
-    Args:
-        submissions (list): A list of submission objects.
-                            Each object is expected to have 'module_name' and 'score' attributes.
+    module_totals = defaultdict(float)
+    module_counts = defaultdict(int)
+    for sub in submissions:
+        module = sub.get("quizModule")
+        try:
+            score = float(sub.get("quizScore"))
+            if module:
+                module_totals[module] += score
+                module_counts[module] += 1
+        except (TypeError, ValueError):
+            continue
 
-    Returns:
-        dict: An object with module names as keys and their average quiz score as values.
-    """
-    scores_by_module = {}
+    return {
+        module: round(module_totals[module] / module_counts[module], 1)
+        for module in module_totals
+    }
 
-    # Group scores by module name
-    for submission in submissions:
-        module_name = submission.get("module_name")
-        score = submission.get("score")
 
-        if module_name not in scores_by_module:
-            scores_by_module[module_name] = []
-        scores_by_module[module_name].append(score)
+submissions = [
+    {
+        "quizName": "Quiz 1",
+        "quizModule": "Statistics",
+        "quizScore": 85,
+        "studentId": 1,
+        "studentName": "Alice",
+        "submissionDate": "2025-09-24",
+    },
+    {
+        "quizName": "Quiz 2",
+        "quizModule": "Algebra",
+        "quizScore": 78,
+        "studentId": 2,
+        "studentName": "Bob",
+        "submissionDate": "2025-09-24",
+    },
+    {
+        "quizName": "Quiz 1",
+        "quizModule": "Statistics",
+        "quizScore": 82,
+        "studentId": 3,
+        "studentName": "Charlie",
+        "submissionDate": "2025-09-23",
+    },
+    {
+        "quizName": "Quiz 2",
+        "quizModule": "Algebra",
+        "quizScore": 81,
+        "studentId": 1,
+        "studentName": "Alice",
+        "submissionDate": "2025-09-23",
+    },
+    {
+        "quizName": "Quiz 1",
+        "quizModule": "History",
+        "quizScore": 80,
+        "studentId": 2,
+        "studentName": "Bob",
+        "submissionDate": "2025-09-23",
+    },
+]
 
-    average_scores = {}
+all_students = ["Alice", "Bob", "Charlie", "David"]
 
-    # Calculate the average for each module
-    for module_name, scores in scores_by_module.items():
-        if scores:
-            average_scores[module_name] = sum(scores) / len(scores)
-        else:
-            average_scores[module_name] = 0.0  # Handle empty score lists
 
-    return average_scores
+filtered_date = filter_by_date(date(2025, 9, 24), submissions)
+print("Filter by Date (2025-09-24):")
+for f in filtered_date:
+    print(f)
+print()
+
+
+filtered_student = filter_by_student_id(1, submissions)
+print("Filter by Student ID (1):")
+for f in filtered_student:
+    print(f)
+print()
+
+
+unsubmitted_students = find_unsubmitted(date(2025, 9, 24), all_students, submissions)
+print("Unsubmitted Students on 2025-09-24:")
+print(unsubmitted_students)
+print()
+
+average_score = get_average_score(submissions)
+print("Average Quiz Score:")
+print(average_score)
+print()
+
+average_by_module = get_average_score_by_module(submissions)
+print("Average Score by Module:")
+print(average_by_module)
+print()
