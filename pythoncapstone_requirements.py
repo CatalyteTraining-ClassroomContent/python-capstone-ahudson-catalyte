@@ -57,6 +57,10 @@ def find_unsubmitted(
 
 
 def get_average_score(submissions: List[Dict]) -> float:
+    """
+    Returns the average quiz score of all submissions rounded to 1 decimal place.
+    Returns 0.0 if submissions array is empty or contains no valid scores.
+    """
     if not submissions:
         return 0.0
 
