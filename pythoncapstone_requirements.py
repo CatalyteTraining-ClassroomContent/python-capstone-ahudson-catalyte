@@ -35,6 +35,10 @@ def filter_by_student_id(student_id: int, submissions: List[Dict]) -> List[Dict]
 def find_unsubmitted(
     date_to_check: date, student_names: List[str], submissions: List[Dict]
 ) -> List[str]:
+    """
+    Returns a list of student names who have not submitted any quiz on the given date.
+    Returns an empty list if all students submitted, no students provided, or submissions array is empty.
+    """
     if not student_names:
         return []
     if not submissions:
