@@ -4,6 +4,10 @@ from collections import defaultdict
 
 
 def filter_by_date(date_to_filter: date, submissions: List[Dict]) -> List[Dict]:
+    """
+    Returns a list of submission objects with submissionDate equal to the given date.
+    Returns an empty list if submissions array is empty or no matches are found.
+    """
     if not submissions:
         return []
 
