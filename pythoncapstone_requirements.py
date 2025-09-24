@@ -80,6 +80,10 @@ def get_average_score(submissions: List[Dict]) -> float:
 
 
 def get_average_score_by_module(submissions: List[Dict]) -> Dict[str, float]:
+    """
+    Returns a dictionary with keys as module names and values as average quiz scores
+    for that module (rounded to 1 decimal place). Returns an empty dictionary if submissions array is empty.
+    """
     if not submissions:
         return {}
 
