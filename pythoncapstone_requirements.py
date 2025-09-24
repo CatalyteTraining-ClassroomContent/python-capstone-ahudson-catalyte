@@ -23,6 +23,10 @@ def filter_by_date(date_to_filter: date, submissions: List[Dict]) -> List[Dict]:
 
 
 def filter_by_student_id(student_id: int, submissions: List[Dict]) -> List[Dict]:
+    """
+    Returns a list of submission objects with studentId equal to the given student_id.
+    Returns an empty list if submissions array is empty or no matches are found.
+    """
     if not submissions:
         return []
     return [sub for sub in submissions if sub.get("studentId") == student_id]
